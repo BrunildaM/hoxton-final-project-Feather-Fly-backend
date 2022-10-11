@@ -12,8 +12,8 @@ datasource db {
 
 model User {
   id        Int       @id @default(autoincrement())
-  gender    String //Mr, Mrs, Ms
-  age       Int
+  gender    String // to give the title on the ticket Mr Mrs or Ms
+  age       Int // kids have special prices 
   firstName String
   lastName  String
   email     String    @unique
@@ -23,13 +23,12 @@ model User {
 }
 
 model Booking {
-  id       Int      @id @default(autoincrement())
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  flight   Flight   @relation(fields: [flightId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId   Int
-  flightId Int
-  tickets  Ticket[]
-  //passangers 
+  id        Int      @id @default(autoincrement())
+  passanger User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  flight    Flight   @relation(fields: [flightId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId    Int
+  flightId  Int
+  tickets   Ticket[]
 }
 
 model Ticket {
@@ -40,8 +39,8 @@ model Ticket {
   status    String  @default("available") //available or booked 
   class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   baggage   String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  bookingId Int
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: Cascade)//this will specify if its booked
+  bookingId Int?
   flight    Flight  @relation(fields: [flightId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   flightId  Int
   classId   Int
@@ -64,34 +63,34 @@ model ClassCapacity {
 }
 
 model Flight {
-  id            Int        @id @default(autoincrement())
-  flightNumber  String
-  // departsFrom   Airport    ("departure", fields: [departureFlightId], references: [id]) //departure airport
-  // arrivesAt     Airport    ("arrival", fields: [arrivalFlightId], references: [id]) //destination 
-  date          DateTime // This may not be needed
-  departureTime DateTime
-  arrivalTime   DateTime
-  status        String     @default("OK") //Ok or cancelled 
-  bookings      Booking[]
-  tickets       Ticket[]
-  flyCompany    flyCompany @relation(fields: [flyCompanyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  flyCompanyId  Int
-  plane         Plane      @relation(fields: [planeId], references: [id])
-  // departureFlightId Int
-  // arrivalFlightId   Int
-  planeId       Int
+  id                Int        @id @default(autoincrement())
+  flightNumber      String
+  departsFrom       Airport    @relation("departure", fields: [departureFlightId], references: [id]) //departure airport
+  arrivesAt         Airport    @relation("arrival", fields: [arrivalFlightId], references: [id]) //destination 
+  date              DateTime // This may not be needed
+  departureTime     DateTime
+  arrivalTime       DateTime
+  status            String     @default("OK") //Ok or cancelled 
+  bookings          Booking[]
+  tickets           Ticket[]
+  flyCompany        FlyCompany @relation(fields: [flyCompanyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  flyCompanyId      Int
+  plane             Plane      @relation(fields: [planeId], references: [id])
+  departureFlightId Int
+  arrivalFlightId   Int
+  planeId           Int
 }
 
 model Plane {
   id              Int             @id @default(autoincrement())
   capacity        Int
-  flyCompany      flyCompany      @relation(fields: [flyCompanyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  flyCompany      FlyCompany      @relation(fields: [flyCompanyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   flyCompanyId    Int
   classCapacities ClassCapacity[]
   flights         Flight[]
 }
 
-model flyCompany {
+model FlyCompany {
   id       Int       @id @default(autoincrement())
   logo     String
   name     String
@@ -101,10 +100,10 @@ model flyCompany {
 }
 
 model Airport {
-  id           Int          @id @default(autoincrement())
-  location     String
-  name         String
-  flyCompanies flyCompany[]
-  // departureFlight Flight[]     @relation("departure")
-  // arrivalFlight   Flight[]     @relation("arrival")
+  id               Int          @id @default(autoincrement())
+  location         String
+  name             String
+  flyCompanies     FlyCompany[]
+  departureFlights Flight[]     @relation("departure")
+  arrivalFlights   Flight[]     @relation("arrival")
 }
