@@ -22,6 +22,10 @@ model User {
   bookings  Booking[]
 }
 
+// model Passanger {
+//   id Int @id @default(autoincrement())
+// }
+
 model Booking {
   id        Int      @id @default(autoincrement())
   passanger User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -35,7 +39,7 @@ model Ticket {
   id        Int     @id @default(autoincrement())
   price     Int
   seat      String
-  type      String  @default("one-way") // one way or return may be into two different models
+  // type      String  @default("one-way") // one way or return may be into two different models
   status    String  @default("available") //available or booked 
   class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   baggage   String
