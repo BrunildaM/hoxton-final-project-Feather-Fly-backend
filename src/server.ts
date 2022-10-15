@@ -1,9 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import { generateToken, getCurrentUser, hash } from "./auth";
-import bcrypt from 'bcryptjs'
-import { verify } from "jsonwebtoken";
+import { generateToken, getCurrentUser, hash, verify } from "./auth";
+
 
 const app = express();
 app.use(cors());
@@ -50,7 +49,6 @@ app.post("/sign-in", async (req, res) => {
   try {
     const {email, password} = req.body;
     
-
     //check for any possible error
     const errors: string[] = [];
 
