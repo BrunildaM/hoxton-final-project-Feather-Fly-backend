@@ -18,7 +18,7 @@ model User {
   lastName  String
   email     String    @unique
   password  String
-  role      String    //user or admin
+  role      String  @default("user")  //user or admin
   bookings  Booking[]
 }
 

@@ -3,10 +3,9 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import { generateToken, getCurrentUser, hash, verify } from "./auth";
 
-
 const app = express();
 app.use(cors());
-app.options("*", cors())
+app.options("*", cors());
 app.use(express.json());
 const prisma = new PrismaClient();
 
@@ -32,7 +31,9 @@ app.post("/airports", async (req, res) => {});
 
 app.get("/flights", async (req, res) => {
   try {
-    const flights = await prisma.flight.findMany();
+    const flights = await prisma.flight.findMany({
+      include: { arrivesAt: true, departsFrom: true, flyCompany: true },
+    });
     res.send(flights);
   } catch (error) {
     //@ts-ignore
@@ -42,13 +43,11 @@ app.get("/flights", async (req, res) => {
 
 app.post("/flights", async (req, res) => {});
 
-
-
 //Log-in a user that already exists with it's credentials
 app.post("/sign-in", async (req, res) => {
   try {
-    const {email, password} = req.body;
-    
+    const { email, password } = req.body;
+
     //check for any possible error
     const errors: string[] = [];
 
@@ -68,7 +67,11 @@ app.post("/sign-in", async (req, res) => {
     //Check if the e-mail and password match
     if (user && verify(password, user.password)) {
       const token = generateToken(user.id);
-      res.send({ user, token });
+      if (user.role === "admin") {
+        res.send({ user, token, isAdmin: true });
+      } else {
+        res.send({ user, token, isAdmin: false });
+      }
     } else {
       res.status(400).send({ errors: ["Wrong credentials!"] });
     }
@@ -80,7 +83,7 @@ app.post("/sign-in", async (req, res) => {
 
 //Create a new account for users
 app.post("/sign-up", async (req, res) => {
-  const { email, password, gender, age, firstName, lastName, role } = req.body;
+  const { email, password, gender, age, firstName, lastName } = req.body;
   try {
     //Check if the email is already in our db
     const existingUser = await prisma.user.findUnique({
@@ -107,9 +110,6 @@ app.post("/sign-up", async (req, res) => {
     if (typeof lastName !== "string")
       errors.push("Last name not provided or not a string");
 
-    if (typeof role !== "string")
-      errors.push("Role not provided or not a string!");
-
     //Don't allow a user under 18 to create an account
     if (age < 18)
       errors.push("You can't create an account if you are under 18!");
@@ -130,7 +130,6 @@ app.post("/sign-up", async (req, res) => {
       lastName,
       email,
       password: hash(password),
-      role
     };
 
     const newUser = await prisma.user.create({
