@@ -118,3 +118,11 @@ model Airport {
   departureFlights Flight[]     @relation("departure")
   arrivalFlights   Flight[]     @relation("arrival")
 }
+
+model Capitals {
+  id Int @id @default(autoincrement())
+  image String
+  name String
+  flights Int
+  averagePrice Int 
+}

@@ -11,6 +11,16 @@ const prisma = new PrismaClient();
 
 const port = 4000;
 
+app.get("/capitals", async (req, res) => {
+  try {
+    const capitals = await prisma.capitals.findMany();
+    res.send(capitals);
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ error: error.message });
+  }
+});
+
 app.get("/airports", async (req, res) => {
   try {
     const airports = await prisma.airport.findMany({
