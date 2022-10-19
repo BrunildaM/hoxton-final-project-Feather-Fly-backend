@@ -51,6 +51,25 @@ app.get("/flights", async (req, res) => {
   }
 });
 
+//Getting flights by location of arrival or departure and time
+app.post("/search", async (req, res) => {
+
+  const { departs, arrives, date } = req.body;
+
+  const results = await prisma.flight.findMany({
+    where: {
+      departsFrom: { location: { contains: departs } },
+      arrivesAt: { location: { contains: arrives } },
+      departureTime: date
+        ? {
+            gte: new Date(date + "T00:00:00Z"),
+            lte: new Date(date + "T23:59:59Z"),
+          }
+        : undefined,
+    },
+  });
+  res.send(results);
+});
 
 //to create a new flight: should be done the tickets part
 //not done properly should finish all possible errors
@@ -69,8 +88,7 @@ app.post("/flights", async (req, res) => {
   res.send(newFlight);
 });
 
-
-//to cancel a flight so change status also if it has any delays 
+//to cancel a flight so change status also if it has any delays
 //not done properly should finish all possible errors
 app.patch("/flights/:id", async (req, res) => {
   const id = Number(req.params.id);
@@ -78,7 +96,7 @@ app.patch("/flights/:id", async (req, res) => {
     where: { id },
     data: { status: req.body.status, departureTime: req.body.departureTime },
   });
-  res.send(updatedFlight)
+  res.send(updatedFlight);
 });
 
 //Log-in a user that already exists with it's credentials
