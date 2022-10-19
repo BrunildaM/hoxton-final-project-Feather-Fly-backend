@@ -53,4 +53,4 @@ export async function createTicketsForFlight(
   }
 }
 
-createTicketsForFlight(2, 400, 30);
+createTicketsForFlight(5, 270, 30);

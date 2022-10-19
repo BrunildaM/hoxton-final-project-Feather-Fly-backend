@@ -51,7 +51,35 @@ app.get("/flights", async (req, res) => {
   }
 });
 
-app.post("/flights", async (req, res) => {});
+
+//to create a new flight: should be done the tickets part
+//not done properly should finish all possible errors
+app.post("/flights", async (req, res) => {
+  const newFlight = await prisma.flight.create({
+    data: {
+      arrivalTime: req.body.arrivalTime,
+      departureTime: req.body.departureTime,
+      flightNumber: req.body.flightNumber,
+      arrivesAt: req.body.arrivesAt,
+      departsFrom: req.body.departsFrom,
+      flyCompany: req.body.flyCompany,
+      plane: req.body.plane,
+    },
+  });
+  res.send(newFlight);
+});
+
+
+//to cancel a flight so change status also if it has any delays 
+//not done properly should finish all possible errors
+app.patch("/flights/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const updatedFlight = await prisma.flight.update({
+    where: { id },
+    data: { status: req.body.status, departureTime: req.body.departureTime },
+  });
+  res.send(updatedFlight)
+});
 
 //Log-in a user that already exists with it's credentials
 app.post("/sign-in", async (req, res) => {
