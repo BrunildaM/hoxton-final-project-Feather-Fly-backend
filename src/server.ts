@@ -177,16 +177,28 @@ app.patch("/flights/:id", async (req, res) => {
   }
 });
 
+app.get("/passengers", async (req, res) => {
+  try {
+  const passangers = await prisma.passanger.findMany()
+  res.send(passangers)
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({errors: [error.message]})
+  }
+})
+
+//create passengers
 app.post("/passengers", async (req, res) => {
   try {
-  const { age, firstName, gender, lastName } = req.body;
-  const passenger = await prisma.passanger.create({
-    data: { age, firstName, gender, lastName },
-  });
-  res.send(passenger)
-} catch (error) 
-//@ts-ignore
-res.status(400).send({errors: [error.message]})
+    const { age, firstName, gender, lastName } = req.body;
+    const passenger = await prisma.passanger.create({
+      data: { age, firstName, gender, lastName },
+    });
+    res.send(passenger);
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
 });
 
 //Log-in a user that already exists with it's credentials
