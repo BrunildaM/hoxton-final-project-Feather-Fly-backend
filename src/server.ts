@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import { generateToken, getCurrentUser, hash, verify } from "./auth";
+import { createTicketsForFlight } from "./helpers";
 
 const app = express();
 app.use(cors());
@@ -11,6 +12,7 @@ const prisma = new PrismaClient();
 
 const port = 4000;
 
+//Get the capitals that has the highest number of flights
 app.get("/capitals", async (req, res) => {
   try {
     const capitals = await prisma.capitals.findMany();
@@ -21,6 +23,7 @@ app.get("/capitals", async (req, res) => {
   }
 });
 
+//Get all airports
 app.get("/airports", async (req, res) => {
   try {
     const airports = await prisma.airport.findMany({
@@ -37,12 +40,44 @@ app.get("/airports", async (req, res) => {
   }
 });
 
-app.post("/airports", async (req, res) => {});
+//Create a new airport
+app.post("/airports", async (req, res) => {
+  try {
+    const { location, name } = req.body;
+    const errors: string[] = [];
 
+    if (typeof location !== "string")
+      errors.push("Location is missing or not a string");
+    if (typeof name !== "string")
+      errors.push("Name not provided or not a string");
+
+    if (errors.length > 0) {
+      return res.status(400).send({ errors });
+    }
+
+    const newAirport = await prisma.airport.create({
+      data: {
+        location,
+        name,
+      },
+    });
+    res.send(newAirport);
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
+//Get all flights
 app.get("/flights", async (req, res) => {
   try {
     const flights = await prisma.flight.findMany({
-      include: { arrivesAt: true, departsFrom: true, flyCompany: true },
+      include: {
+        arrivesAt: true,
+        departsFrom: true,
+        flyCompany: true,
+        tickets: { include: { class: { include: { classCapacities: true } } } },
+      },
     });
     res.send(flights);
   } catch (error) {
@@ -53,11 +88,12 @@ app.get("/flights", async (req, res) => {
 
 //Getting flights by location of arrival or departure and time
 app.post("/search", async (req, res) => {
-
   const { departs, arrives, date } = req.body;
 
   const results = await prisma.flight.findMany({
     where: {
+      // tickets: {every: {class: {name: {contains: class}}}}
+
       departsFrom: { location: { contains: departs } },
       arrivesAt: { location: { contains: arrives } },
       departureTime: date
@@ -74,29 +110,83 @@ app.post("/search", async (req, res) => {
 //to create a new flight: should be done the tickets part
 //not done properly should finish all possible errors
 app.post("/flights", async (req, res) => {
-  const newFlight = await prisma.flight.create({
-    data: {
-      arrivalTime: req.body.arrivalTime,
-      departureTime: req.body.departureTime,
-      flightNumber: req.body.flightNumber,
-      arrivesAt: req.body.arrivesAt,
-      departsFrom: req.body.departsFrom,
-      flyCompany: req.body.flyCompany,
-      plane: req.body.plane,
-    },
-  });
-  res.send(newFlight);
+  try {
+    const { arrivalTime, departureTime, flightNumber } = req.body;
+    const newFlight = await prisma.flight.create({
+      data: {
+        arrivalTime,
+        departureTime,
+        flightNumber,
+        departsFrom: {
+          connectOrCreate: {
+            where: { id: Number(req.body.id) },
+            create: { location: req.body.location, name: req.body.location },
+          },
+        },
+        arrivesAt: {
+          connectOrCreate: {
+            where: { id: Number(req.body.id) },
+            create: { location: req.body.location, name: req.body.location },
+          },
+        },
+        flyCompany: {
+          connectOrCreate: {
+            where: { id: Number(req.body.id) },
+            create: { logo: req.body.logo, name: req.body.name },
+          },
+        },
+        plane: {
+          connectOrCreate: {
+            where: { id: Number(req.body.id) },
+            create: {
+              capacity: req.body.capacity,
+              classCapacities: req.body.classCapacities,
+              flyCompany: { connect: { id: Number(req.body.id) } },
+            },
+          },
+        },
+      },
+    });
+    res.send(newFlight);
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
 });
 
 //to cancel a flight so change status also if it has any delays
 //not done properly should finish all possible errors
 app.patch("/flights/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const updatedFlight = await prisma.flight.update({
-    where: { id },
-    data: { status: req.body.status, departureTime: req.body.departureTime },
+  try {
+    const id = Number(req.params.id);
+    if (id) {
+      const updatedFlight = await prisma.flight.update({
+        where: { id },
+        data: {
+          status: req.body.status,
+          departureTime: req.body.departureTime,
+        },
+      });
+      res.send(updatedFlight);
+    } else {
+      res.status(404).send("Flight not found!");
+    }
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ error: error.message });
+  }
+});
+
+app.post("/passengers", async (req, res) => {
+  try {
+  const { age, firstName, gender, lastName } = req.body;
+  const passenger = await prisma.passanger.create({
+    data: { age, firstName, gender, lastName },
   });
-  res.send(updatedFlight);
+  res.send(passenger)
+} catch (error) 
+//@ts-ignore
+res.status(400).send({errors: [error.message]})
 });
 
 //Log-in a user that already exists with it's credentials
