@@ -86,6 +86,21 @@ app.get("/flights", async (req, res) => {
   }
 });
 
+
+//trying to get tickets
+app.get("/flights/:departure/:arrival/:time",async(req,res)=>{
+  const flights=await prisma.flight.findMany({
+    where:{
+    departsFrom:{location:{contains:req.params.departure}},
+    arrivesAt:{location:{contains:req.params.arrival}},
+    departureTime:{gte: new Date(req.params.time)}
+    },
+    select:{departsFrom:true,arrivalTime:true,arrivesAt:true}
+    }) 
+ if(flights.length!==0) res.send(flights)
+ else res.status(400).send({message:`There is no flight from ${req.params.departure} to ${req.params.arrival} at this date ${req.params.time}`})
+})
+
 //Getting flights by location of arrival or departure and time
 app.post("/search", async (req, res) => {
   const { departs, arrives, date } = req.body;
@@ -179,13 +194,13 @@ app.patch("/flights/:id", async (req, res) => {
 
 app.get("/passengers", async (req, res) => {
   try {
-  const passangers = await prisma.passanger.findMany()
-  res.send(passangers)
+    const passangers = await prisma.passanger.findMany();
+    res.send(passangers);
   } catch (error) {
     //@ts-ignore
-    res.status(400).send({errors: [error.message]})
+    res.status(400).send({ errors: [error.message] });
   }
-})
+});
 
 //create passengers
 app.post("/passengers", async (req, res) => {
@@ -200,6 +215,28 @@ app.post("/passengers", async (req, res) => {
     res.status(400).send({ errors: [error.message] });
   }
 });
+
+//to delete a passenger
+app.delete("/passengers/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (id) {
+      const deletedPassenger = await prisma.passanger.delete({ where: { id } });
+      res.send({ message: "Passenger deleted" });
+    } else {
+      res.status(404).send("Passenger not found");
+    }
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
+
+//Get all tickets for a specific flight
+app.get("/tickets", async (req, res) => {
+  const flight = await prisma.flight.findUnique({where: {id: Number(req.body.id)}})
+})
 
 //Log-in a user that already exists with it's credentials
 app.post("/sign-in", async (req, res) => {
