@@ -86,20 +86,36 @@ app.get("/flights", async (req, res) => {
   }
 });
 
-
-//trying to get tickets
-app.get("/flights/:departure/:arrival/:time",async(req,res)=>{
-  const flights=await prisma.flight.findMany({
-    where:{
-    departsFrom:{location:{contains:req.params.departure}},
-    arrivesAt:{location:{contains:req.params.arrival}},
-    departureTime:{gte: new Date(req.params.time)}
+//get a flight by destinations and time
+app.get("/flights/:departure/:arrival/:time", async (req, res) => {
+  const flights = await prisma.flight.findMany({
+    where: {
+      departsFrom: { location: { contains: req.params.departure } },
+      arrivesAt: { location: { contains: req.params.arrival } },
+      departureTime: {
+        gte: new Date(req.params.time + "T00:00:00Z"),
+        lte: new Date(req.params.time + "T23:59:59Z"),
+      },
     },
-    select:{departsFrom:true,arrivalTime:true,arrivesAt:true}
-    }) 
- if(flights.length!==0) res.send(flights)
- else res.status(400).send({message:`There is no flight from ${req.params.departure} to ${req.params.arrival} at this date ${req.params.time}`})
-})
+    select: {
+      departsFrom: true,
+      arrivalTime: true,
+      arrivesAt: true,
+      flyCompany: true,
+      flightNumber: true,
+      departureTime: true,
+      status: true,
+      tickets: true
+    },
+  });
+  if (flights.length !== 0) res.send(flights);
+  else
+    res
+      .status(400)
+      .send({
+        message: `There is no flight from ${req.params.departure} to ${req.params.arrival} at this date ${req.params.time}`,
+      });
+});
 
 //Getting flights by location of arrival or departure and time
 app.post("/search", async (req, res) => {
@@ -232,11 +248,12 @@ app.delete("/passengers/:id", async (req, res) => {
   }
 });
 
-
 //Get all tickets for a specific flight
 app.get("/tickets", async (req, res) => {
-  const flight = await prisma.flight.findUnique({where: {id: Number(req.body.id)}})
-})
+  const flight = await prisma.flight.findUnique({
+    where: { id: Number(req.body.id) },
+  });
+});
 
 //Log-in a user that already exists with it's credentials
 app.post("/sign-in", async (req, res) => {
